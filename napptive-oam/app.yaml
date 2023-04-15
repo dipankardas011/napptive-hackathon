@@ -1,0 +1,109 @@
+
+---
+apiVersion: core.oam.dev/v1beta1
+kind: ComponentDefinition
+metadata:
+  name: configmap
+spec:
+  schematic:
+    cue:
+      template: |
+        parameter: {
+          // +usage=Name of the ConfigMap
+          name: string
+          // +usage=Key-value pairs to be stored in the ConfigMap
+          data: [string]: string
+          // +usage=Key-value pairs for labels
+          labels: [string]: string
+        }
+        output: {
+          apiVersion: "v1"
+          kind: "ConfigMap"
+          metadata: {
+            name: parameter.name
+            labels: parameter.labels
+          }
+          data: parameter.data
+        }
+---
+apiVersion: core.oam.dev/v1beta1
+kind: Application
+metadata:
+  name: hackathon-application
+spec:
+  components:
+
+    - name: redis-configuration
+      type: configmap
+      properties:
+        name: redis-config
+        labels:
+          role: redis
+        data:
+          redis.conf: |-
+            maxmemory 2mb
+            maxmemory-policy allkeys-lru
+
+    - name: redis
+      type: webserver
+      properties:
+        image: redis:5.0.4
+        cmd:
+          - "redis-server"
+          - "/redis-master/redis.conf"
+        env:
+          - name: MASTER
+            value: "true"
+        ports:
+          - port: 6379
+            expose: true
+        volumeMounts:
+          configMap: # Using a Config Map
+            - name: cm-data
+              mountPath: "/redis-master/redis.conf"
+              subPath: redis.conf
+              cmName: "redis-config"
+          emptyDir:
+            - name: data
+              mountPath: "/redis-master-data"
+
+    - name: http-server
+      type: webservice
+      properties:
+        image: docker.io/dipugodocker/hackathon-napptive:1.0
+        ports:
+          - port: 8080
+            expose: true
+
+      traits:
+        - type: resource # Set to resource
+          properties:
+            requests: # (Optional) Specify resources in requests
+              cpu: 0.05 # (Optional) Specify the amount of cpu for requests. 1 by default
+              memory: "10Mi" # (Optional) Specify the amount of memory for requests. 2048Mi by default
+            limits: # (Optional) Specify resources in limits
+              cpu: 0.25 # (Optional) Specify the amount of cpu for limits. 1 by default
+              memory: "200Mi" # (Optional) Specify the amount of memory for limits. 2048Mi by default
+
+        - type: napptive-ingress
+          properties:
+            port: 8080
+            path: /
+
+        - type: scaler
+          properties:
+            replicas: 2
+  workflows:
+    steps:
+      - name: redis-config
+        type: apply-component
+        properties:
+          component: redis-configuration
+      - name: redis-server
+        type: apply-component
+        properties:
+          component: redis
+      - name: http-server
+        type: apply-component
+        properties:
+          component: http-server
