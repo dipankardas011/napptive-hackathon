@@ -2,8 +2,10 @@
 ![](./logo.png)
 ---
 wemakedevs napptive hackathon on OAM
+trying to acchieve 3 outcomes to deploy the redis using OAM with custom made configmap and app to show the functional aspect
 
-trying to acchieve 3 outcomes to create the redis OAM with custom made configmap and app to show the details
+## Team
+`lets-rock`
 
 ## Components
 - Redis database
@@ -14,4 +16,4 @@ trying to acchieve 3 outcomes to create the redis OAM with custom made configmap
 - [x] Custom ConfigMap
 - [x] Done with data to be shown when started
 - [x] go server
-- [ ] _(optional)_ write blog
+- [x] _(optional)_ write blog ![Link](https://dipankardas011.hashnode.dev/lets-understand-oam-and-napptive)
