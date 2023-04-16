@@ -1,0 +1,19 @@
+apiVersion: core.napptive.com/v1alpha1
+kind: ApplicationMetadata
+name: "Redis-With-Go-gin"
+version: "1.0"
+description: A Go gin server to persist the albums in Redis database
+keywords:
+  - "redis"
+  - "database"
+  - "go"
+  - "restful API"
+  - "API"
+license: "SSPLv1"
+url: "https://www.redis.com"
+doc: "https://hub.docker.com/_/redis"
+logo:
+  # Do not hotlink images without permission :)
+  - src: ""
+    type: "image/png"
+    size: "120x120"
