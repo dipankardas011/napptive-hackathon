@@ -33,7 +33,7 @@ metadata:
   name: hackathon-application
 spec:
   components:
-   
+
     - name: redis-configuration
       type: configmap
       properties:
@@ -99,13 +99,13 @@ spec:
           properties:
             name: config
             image: redis:6.2.3-alpine
-            cmd: 
-              - "sh" 
+            cmd:
+              - "sh"
               - "-c"
             args:
               - |
                 cp /tmp/redis/redis.conf /etc/redis/redis.conf
-                
+
                 echo "finding master..."
                 MASTER_FDQN=`hostname  -f | sed -e 's/redis-[0-9]\./redis-0./'`
                 if [ "$(redis-cli -h sentinel -p 5000 ping)" != "PONG" ]; then
@@ -138,10 +138,17 @@ spec:
     - name: http-server
       type: webservice
       properties:
-        image: docker.io/dipugodocker/hackathon-napptive:1.0
+        image: docker.io/dipugodocker/hackathon-napptive:2.0
         ports:
           - port: 8080
             expose: true
+        env:
+          - name: REDIS_PORT
+            value: "6379"
+          - name: REDIS_HOST
+            value: "redis-0"
+          - name: REDIS_PASSWORD
+            value: "a-very-strong-password"
 
       traits:
         # - type: resource # Set to resource

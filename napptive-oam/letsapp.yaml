@@ -1,0 +1,159 @@
+apiVersion: core.oam.dev/v1beta1
+kind: ComponentDefinition
+metadata:
+  name: configmap
+spec:
+  schematic:
+    cue:
+      template: |
+        parameter: {
+          // +usage=Name of the ConfigMap
+          name: string
+          // +usage=Key-value pairs to be stored in the ConfigMap
+          data: [string]: string
+          // +usage=Key-value pairs for labels
+          labels: [string]: string
+        }
+        output: {
+          apiVersion: "v1"
+          kind: "ConfigMap"
+          metadata: {
+            name: parameter.name
+            labels: parameter.labels
+          }
+          data: parameter.data
+        }
+
+---
+apiVersion: core.oam.dev/v1beta1
+kind: ComponentDefinition
+metadata:
+  name: secrets
+spec:
+  schematic:
+    cue:
+      template: |
+        parameter: {
+          // +usage=Name of the ConfigMap
+          name: string
+          // +usage=Key-value pairs to be stored in the ConfigMap
+          data: [string]: string
+        }
+        output: {
+          apiVersion: "v1"
+          kind: "Secret"
+          metadata: {
+            name: parameter.name
+          }
+          data: parameter.data
+        }
+
+---
+apiVersion: core.oam.dev/v1beta1
+kind: Application
+metadata:
+  name: hackathon-application
+spec:
+  components:
+
+    - name: redis-configuration
+      type: configmap
+      properties:
+        name: redis-config
+        labels:
+          role: redis
+        data:
+          redis.conf: |-
+            bind 0.0.0.0
+            port 6379
+            tcp-backlog 511
+            masterauth OKz6eZYrkIZQSjtFb1
+            requirepass OKz6eZYrkIZQSjtFb1
+            protected-mode no
+            timeout 0
+            tcp-keepalive 300
+            pidfile /var/run/redis_6379.pid
+            loglevel notice
+            logfile ""
+            dbfilename dump.rdb
+            dir /data/
+            replica-read-only yes
+            appendfsync everysec
+
+    - name: redis-secrets
+      type: secrets
+      properties:
+        name: redis-password
+        data:
+          password: T0t6NmVaWXJrSVpRU2p0RmIxCg==
+
+    - name: redis
+      type: statefulservice
+      properties:
+        replicas: 1
+        image: redis:6.2.3-alpine
+        cmd: ["redis-server"]
+        args: ["/etc/redis/redis.conf"]
+        name: redis
+        ports:
+          - port: 6379
+            protocol: TCP
+            expose: true
+        volumeMounts:
+          pvc:
+            - name: data
+              mountPath: /data
+              size: 500Mi
+              claimName: redis-pvc
+          configMap:
+            - name: config
+              mountPath: "/etc/redis/redis.conf"
+              subPath: redis.conf
+              cmName: redis-config
+
+    - name: http-server
+      type: webservice
+      properties:
+        image: docker.io/dipugodocker/hackathon-napptive:2.0
+        ports:
+          - port: 8080
+            expose: true
+        env:
+          - name: REDIS_PORT
+            value: "6379"
+          - name: REDIS_HOST
+            value: "redis-0.redis-headless"
+          - name: REDIS_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: redis-password
+                key: password
+
+      traits:
+        - type: napptive-ingress
+          properties:
+            port: 8080
+            path: /
+
+        - type: scaler
+          properties:
+            replicas: 2
+
+  workflows:
+    steps:
+      - name: redis-config
+        type: apply-component
+        properties:
+          component: redis-configuration
+      - name: redis-secrets
+        type: apply-component
+        properties:
+          component: redis-secrets
+      - name: redis-server
+        type: apply-component
+        properties:
+          component: redis
+      - name: http-server
+        type: apply-component
+        properties:
+          component: http-server
