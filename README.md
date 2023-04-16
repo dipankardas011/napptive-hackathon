@@ -16,4 +16,4 @@ trying to acchieve 3 outcomes to deploy the redis using OAM with custom made con
 - [x] Custom ConfigMap
 - [x] Done with data to be shown when started
 - [x] go server
-- [x] _(optional)_ write blog ![Link](https://dipankardas011.hashnode.dev/lets-understand-oam-and-napptive)
+- [x] _(optional)_ write blog [Link](https://dipankardas011.hashnode.dev/lets-understand-oam-and-napptive)
